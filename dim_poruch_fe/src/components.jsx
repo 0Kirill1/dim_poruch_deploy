@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { apiRequest, formatApiError, formatPrice, imageUrl, notifyNotificationsChanged, tokenStore } from './api';
+import { apiRequest, formatApiError, formatPrice, notifyNotificationsChanged, tokenStore } from './api';
 import { useAuth } from './auth';
 
 const iconPaths = {
@@ -92,8 +92,7 @@ export function useProtectedImage(path) {
     let objectUrl;
     setSrc('');
     if (!path) return undefined;
-    const url = imageUrl(path);
-    apiRequest(url, { responseType: 'blob', auth: Boolean(tokenStore.access) })
+    apiRequest(path, { responseType: 'blob', auth: Boolean(tokenStore.access) })
       .then((blob) => { objectUrl = URL.createObjectURL(blob); if (active) setSrc(objectUrl); else URL.revokeObjectURL(objectUrl); })
       .catch(() => { if (active) setSrc(''); });
     return () => { active = false; if (objectUrl) URL.revokeObjectURL(objectUrl); };
