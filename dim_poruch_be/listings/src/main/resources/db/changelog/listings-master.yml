@@ -1,0 +1,10 @@
+databaseChangeLog:
+  - include:
+      file: 01-create-listings-table.sql
+      relativeToChangelogFile: true
+  - include:
+      file: 02-drop-currency.sql
+      relativeToChangelogFile: true
+  - include:
+      file: 03-create-listing-images-and-amenities.sql
+      relativeToChangelogFile: true

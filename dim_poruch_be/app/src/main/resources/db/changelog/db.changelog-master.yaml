@@ -1,0 +1,11 @@
+databaseChangeLog:
+  - include:
+      file: db/changelog/user-master.yml
+  - include:
+      file: db/changelog/listings-master.yml
+  - include:
+      file: db/changelog/booking-master.yml
+  - include:
+      file: db/changelog/reviews-master.yml
+  - include:
+      file: db/changelog/notification-master.yml

@@ -1,0 +1,7 @@
+databaseChangeLog:
+  - include:
+      file: 01-create-booking-table.sql
+      relativeToChangelogFile: true
+  - include:
+      file: 02-add-foreign-keys.sql
+      relativeToChangelogFile: true

@@ -1,0 +1,9 @@
+.git
+.idea
+**/target
+**/build
+*.iml
+Dockerfile
+docker-compose.yml
+postman
+skills

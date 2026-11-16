@@ -1,0 +1,16 @@
+databaseChangeLog:
+  - include:
+      file: 01-create-user-table.sql
+      relativeToChangelogFile: true
+  - include:
+      file: 02-add-unique-email.sql
+      relativeToChangelogFile: true
+  - include:
+      file: 03-create-tokens-table.sql
+      relativeToChangelogFile: true
+  - include:
+      file: 04-add-created-at-and-user-index.sql
+      relativeToChangelogFile: true
+  - include:
+      file: 05-add-role-to-users.sql
+      relativeToChangelogFile: true
