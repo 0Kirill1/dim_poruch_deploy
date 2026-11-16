@@ -4,6 +4,9 @@ services:
     ports:
       - "8080:8080"
     environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/dim_poruch_be
+      SPRING_DATASOURCE_USERNAME: dim_poruch
+      SPRING_DATASOURCE_PASSWORD: dim_poruch
       APP_STORAGE_LISTINGS_PATH: /var/app/uploads/listings
     volumes:
       - listing_images:/var/app/uploads/listings
