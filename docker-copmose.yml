@@ -1,0 +1,56 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: dim_poruch_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: dim_poruch_be
+      POSTGRES_USER: dim_poruch
+      POSTGRES_PASSWORD: dim_poruch
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dim_poruch -d dim_poruch_be"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./dim_poruch_be
+    container_name: dim_poruch_backend
+    restart: unless-stopped
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/dim_poruch_be
+      SPRING_DATASOURCE_USERNAME: dim_poruch
+      SPRING_DATASOURCE_PASSWORD: dim_poruch
+      APP_STORAGE_LISTINGS_PATH: /var/app/uploads/listings
+    volumes:
+      - listing_images:/var/app/uploads/listings
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./dim_poruch_fe
+      args:
+        VITE_API_BASE_URL: /api/v1
+    container_name: dim_poruch_frontend
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    container_name: dim_poruch_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - backend
+      - frontend
+
+volumes:
+  postgres_data:
+  listing_images:
