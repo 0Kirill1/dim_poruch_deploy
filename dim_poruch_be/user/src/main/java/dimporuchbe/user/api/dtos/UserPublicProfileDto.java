@@ -19,6 +19,8 @@ public class UserPublicProfileDto {
     private UUID id;
     @Schema(description = "User's full name", example = "Alex Johnson")
     private String fullName;
+    @Schema(description = "User's phone number", example = "+380000000000")
+    private String phone;
     @Schema(description = "Assigned account role", example = "TENANT")
     private Role role;
     @Schema(description = "Date and time the user joined", example = "2024-01-15T10:30:00+00:00")

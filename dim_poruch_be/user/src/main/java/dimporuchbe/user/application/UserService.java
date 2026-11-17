@@ -45,6 +45,7 @@ public class UserService {
         return UserPublicProfileDto.builder()
                 .id(user.getId())
                 .fullName(user.getFullName())
+                .phone(user.getPhone())
                 .role(user.getRole())
                 .memberSince(user.getCreatedAt())
                 .build();
