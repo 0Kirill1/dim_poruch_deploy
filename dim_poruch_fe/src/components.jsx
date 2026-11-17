@@ -206,7 +206,7 @@ export function Header() {
 }
 
 export function Footer() {
-  return <footer className="site-footer"><div className="footer-inner"><div className="footer-brand-column"><Logo compact/><p>Знаходьте свій дім поруч.</p><span>© {new Date().getFullYear()} ДімПоруч</span></div><div className="footer-link-column"><strong>Орендарям</strong><Link to="/search">Знайти житло</Link><Link to="/dashboard/tenant">Мої бронювання</Link></div><div className="footer-link-column"><strong>Власникам</strong><Link to="/register?role=LANDLORD">Здати житло</Link><Link to="/dashboard/landlord">Кабінет власника</Link></div><div className="footer-link-column"><strong>ДімПоруч</strong><Link to="/#about">Про нас</Link><Link to="/#how-it-works">Як це працює</Link></div></div></footer>;
+  return <footer className="site-footer"><div className="footer-inner"><div className="footer-brand-column"><Logo compact/><p>Знаходьте свій дім поруч.</p><span>© {new Date().getFullYear()} ДімПоруч</span></div><div className="footer-link-column"><strong>Орендарям</strong><Link to="/search">Знайти житло</Link><Link to="/dashboard/tenant">Мої бронювання</Link></div><div className="footer-link-column"><strong>Власникам</strong><Link to="/register?role=LANDLORD">Здати житло</Link><Link to="/dashboard/landlord">Кабінет власника</Link></div><div className="footer-link-column"><strong>ДімПоруч</strong><Link to="/#about">Про нас</Link><Link to="/#how-it-works">Як це працює</Link></div><div className="footer-link-column"><strong>Технічна підтримка</strong><a href="mailto:dimporuchtech@gmail.com">dimporuchtech@gmail.com</a></div></div></footer>;
 }
 
 export function AppShell({ children }) {
