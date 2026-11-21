@@ -166,15 +166,18 @@ export function Header() {
     const next = !panelOpen;
     setPanelOpen(next);
     if (next && user) {
-      try { const result = await apiRequest('/me/notifications'); setNotifications(Array.isArray(result) ? result : []); }
+      try {
+        const result = await apiRequest('/me/notifications');
+        setNotifications(Array.isArray(result) ? result.filter((item) => !item.readAt) : []);
+      }
       catch { setNotifications([]); }
     }
   };
 
   const markOne = async (notification) => {
     try {
-      const updated = await apiRequest(`/me/notifications/${notification.id}/read`, { method: 'PATCH' });
-      setNotifications((items) => items.map((item) => item.id === notification.id ? updated : item));
+      await apiRequest(`/me/notifications/${notification.id}/read`, { method: 'PATCH' });
+      setNotifications((items) => items.filter((item) => item.id !== notification.id));
       refreshUnread();
       notifyNotificationsChanged();
     } catch { /* A full refresh will show the authoritative state. */ }

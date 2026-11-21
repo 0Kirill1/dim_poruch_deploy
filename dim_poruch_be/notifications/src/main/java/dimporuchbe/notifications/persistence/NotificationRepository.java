@@ -18,4 +18,7 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
     @Modifying
     @Query("UPDATE Notification n SET n.readAt = CURRENT_TIMESTAMP WHERE n.recipient = :recipient AND n.readAt IS NULL")
     void markAllAsRead(@Param("recipient") UUID recipient);
+
+    @Modifying
+    void deleteAllByRecipientAndReadAtIsNotNull(UUID recipient);
 }

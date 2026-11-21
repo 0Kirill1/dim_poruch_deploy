@@ -461,6 +461,7 @@ h1, h2, h3 { font-family: 'Manrope', 'DM Sans', sans-serif; color: var(--ink); l
 .review-sent { display: inline-flex; align-items: center; gap: 4px; color: #66826b; font-size: 13px; }
 .notification-preview { margin-bottom: 10px; }
 .notifications-list { display: flex; flex-direction: column; gap: 8px; }
+.notifications-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
 .notification-row { position: relative; display: flex; align-items: center; gap: 13px; padding: 14px; border: 1px solid #e9ece5; border-radius: 12px; background: #fffefa; transition: background .15s ease, border-color .15s ease; }
 .notification-row-unread { border-color: #dde8d9; background: #f7faf5; }
 .notification-row-button { width: 100%; color: inherit; text-align: left; cursor: pointer; }

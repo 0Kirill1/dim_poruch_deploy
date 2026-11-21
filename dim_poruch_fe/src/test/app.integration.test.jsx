@@ -5,9 +5,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Guarded } from '../App';
 import { apiRequest } from '../api';
 import { AuthProvider } from '../auth';
-import { AdminDashboardPage, LandlordDashboardPage, ListingFormPage, ListingManagementPage, TenantDashboardPage } from '../dashboard-pages';
+import { AdminDashboardPage, LandlordDashboardPage, ListingFormPage, ListingManagementPage, NotificationsPage, TenantDashboardPage } from '../dashboard-pages';
 import { LoginPage, RegisterPage } from '../auth-pages';
-import { AvailabilityCalendar } from '../components';
+import { AvailabilityCalendar, Header } from '../components';
 import { BookingRequestPage, ListingDetailsPage, SearchPage } from '../public-pages';
 
 const apiPath = (url) => url.pathname.replace('/api/v1', '');
@@ -116,6 +116,27 @@ describe('frontend integration flows', () => {
     renderRoute('/private', '/private', <Guarded roles={['TENANT']}><div>tenant-only content</div></Guarded>, <Route path="/dashboard/landlord" element={<div>landlord dashboard</div>}/>);
     expect(await screen.findByText('landlord dashboard')).toBeInTheDocument();
     expect(screen.queryByText('tenant-only content')).not.toBeInTheDocument();
+  });
+
+  it('shows only unread notifications in the bell dropdown', async () => {
+    const user = userEvent.setup();
+    setTokens();
+    stubApi(async (url) => {
+      const path = apiPath(url);
+      if (path === '/me') return json(profile('TENANT'));
+      if (path === '/me/notifications/unread-count') return json({ unreadCount: 1 });
+      if (path === '/me/notifications') return json([
+        { id: 'read-1', title: 'Прочитане сповіщення', body: 'Стара подія', readAt: '2026-11-20T10:00:00Z' },
+        { id: 'unread-1', title: 'Нове сповіщення', body: 'Нова подія', readAt: null },
+      ]);
+      return json({}, 404);
+    });
+
+    render(<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><AuthProvider><Header/></AuthProvider></MemoryRouter>);
+
+    await user.click(await screen.findByRole('button', { name: 'Сповіщення' }));
+    expect(await screen.findByText('Нове сповіщення')).toBeInTheDocument();
+    expect(screen.queryByText('Прочитане сповіщення')).not.toBeInTheDocument();
   });
 
   it('submits listing search filters and renders active results', async () => {
@@ -353,6 +374,34 @@ describe('frontend integration flows', () => {
     await user.click(await screen.findByRole('button', { name: 'Завершити' }));
     await waitFor(() => expect(calls.some(({ path, init }) => path === '/bookings/booking-landlord-1/complete' && init.method === 'POST')).toBe(true));
     await waitFor(() => expect(within(container.querySelector('#booking-booking-landlord-1')).getByText('Завершено')).toBeInTheDocument());
+  });
+
+  it('deletes only read notifications', async () => {
+    const user = userEvent.setup();
+    setTokens();
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const calls = [];
+    let notifications = [
+      { id: 'read-1', title: 'Прочитане', body: 'Старе сповіщення', createdAt: '2026-11-20T10:00:00Z', readAt: '2026-11-20T11:00:00Z' },
+      { id: 'unread-1', title: 'Непрочитане', body: 'Нове сповіщення', createdAt: '2026-11-21T10:00:00Z', readAt: null },
+    ];
+    stubApi(async (url, init) => {
+      const path = apiPath(url); calls.push({ path, init });
+      if (path === '/me') return json(profile('TENANT'));
+      if (path === '/me/notifications') return json(notifications);
+      if (path === '/me/notifications/delete-read' && init.method === 'DELETE') {
+        notifications = notifications.filter((item) => !item.readAt);
+        return json({ message: 'Усі прочитані сповіщення видалено' });
+      }
+      return json({}, 404);
+    });
+
+    renderRoute('/notifications', '/notifications', <NotificationsPage/>);
+
+    await user.click(await screen.findByRole('button', { name: 'Видалити прочитані' }));
+    await waitFor(() => expect(calls.some(({ path, init }) => path === '/me/notifications/delete-read' && init.method === 'DELETE')).toBe(true));
+    expect(await screen.findByText('Непрочитане')).toBeInTheDocument();
+    expect(screen.queryByText('Прочитане')).not.toBeInTheDocument();
   });
 
   it('lets a tenant complete an active booking', async () => {

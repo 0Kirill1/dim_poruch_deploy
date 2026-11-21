@@ -72,9 +72,17 @@ export function NotificationsPage() {
     catch (err) { setError(formatApiError(err)); }
     finally { setBusy(false); }
   };
+  const deleteRead = async () => {
+    if (!window.confirm('Видалити всі прочитані сповіщення?')) return;
+    setBusy(true); setError('');
+    try { await apiRequest('/me/notifications/delete-read', { method: 'DELETE' }); setItems((current) => current.filter((item) => !item.readAt)); notifyNotificationsChanged(); }
+    catch (err) { setError(formatApiError(err)); }
+    finally { setBusy(false); }
+  };
   const unreadCount = items.filter((item) => !item.readAt).length;
+  const readCount = items.filter((item) => item.readAt).length;
 
-  return <DashboardFrame active="/notifications"><PageHeading eyebrow="Ваші оновлення" title="Сповіщення" description="Запити, відповіді та важливі новини про ваші помешкання." action={unreadCount > 0 && <Button variant="outline" disabled={busy} onClick={markAll}>Позначити всі прочитаними</Button>}/><Alert>{error}</Alert>{loading ? <Loading/> : items.length ? <div className="notifications-list">{items.map((item) => {
+  return <DashboardFrame active="/notifications"><PageHeading eyebrow="Ваші оновлення" title="Сповіщення" description="Запити, відповіді та важливі новини про ваші помешкання." action={(unreadCount > 0 || readCount > 0) && <div className="notifications-actions">{unreadCount > 0 && <Button variant="outline" disabled={busy} onClick={markAll}>Позначити всі прочитаними</Button>}{readCount > 0 && <Button variant="danger" disabled={busy} onClick={deleteRead}>Видалити прочитані</Button>}</div>}/><Alert>{error}</Alert>{loading ? <Loading/> : items.length ? <div className="notifications-list">{items.map((item) => {
     const href = notificationHref(item, user?.role);
     const row = <><span className={`notification-symbol ${!item.readAt ? 'notification-symbol-unread' : ''}`}><Icon name={item.type?.toLowerCase().includes('booking') ? 'calendar' : 'bell'} size={18}/></span><span className="notification-content"><strong>{item.title}</strong><span>{item.body}</span><small>{notificationTime(item.createdAt)}</small></span>{!item.readAt && <span className="notification-unread-dot"/>}</>;
     return href ? <Link to={href} key={item.id} className={`notification-row ${!item.readAt ? 'notification-row-unread' : ''}`} onClick={() => markOne(item)}>{row}</Link> : <button type="button" key={item.id} className={`notification-row notification-row-button ${!item.readAt ? 'notification-row-unread' : ''}`} onClick={() => markOne(item)} disabled={busy}>{row}</button>;

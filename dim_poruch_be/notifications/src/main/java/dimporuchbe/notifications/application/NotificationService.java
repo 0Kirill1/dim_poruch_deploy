@@ -77,6 +77,14 @@ public class NotificationService {
         return notificationRepository.save(notification);
     }
 
+    @Transactional
+    public void deleteAllReadNotifications(String email){
+        User user = userRepository.findByEmail(email).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        notificationRepository.deleteAllByRecipientAndReadAtIsNotNull(user.getId());
+    }
+
     private NotificationDto mapToDto(Notification notification){
         return NotificationDto.builder()
                 .id(notification.getId())
