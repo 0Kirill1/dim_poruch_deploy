@@ -48,4 +48,7 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
 
     @Query("SELECT b FROM Booking b WHERE b.status = 'APPROVED' AND b.startDate <= CURRENT_DATE")
     List<Booking> findBookingsToActivate();
+
+    @Query("SELECT b FROM Booking b WHERE b.status = 'COMPLETED' AND b.startDate <= CURRENT_DATE")
+    List<Booking> findBookingsToComplete();
 }

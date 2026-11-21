@@ -32,6 +32,7 @@ public class NotificationEventListener {
         Map<BookingStatus, String> statusTranslated = new HashMap<>();
         statusTranslated.put(BookingStatus.APPROVED, "Підтверджено");
         statusTranslated.put(BookingStatus.REJECTED, "Відхилено");
+        statusTranslated.put(BookingStatus.ACTIVE, "Активне");
         statusTranslated.put(BookingStatus.COMPLETED, "Завершено");
         statusTranslated.put(BookingStatus.CANCELLED, "Скасовано");
 

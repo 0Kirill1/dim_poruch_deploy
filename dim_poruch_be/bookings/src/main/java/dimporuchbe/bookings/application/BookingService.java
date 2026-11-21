@@ -193,7 +193,24 @@ public class BookingService {
 
     @Scheduled(cron = "0 0 0 * * *")
     @Transactional
-    public void activateStartedBookings(){
+    public void updateBookings(){
+        activateStartedBookings();
+        completeStartedBookings();
+    }
+
+    private BookingDto mapToDto(Booking booking){
+        return BookingDto.builder()
+                .id(booking.getId())
+                .listing(booking.getListing())
+                .tenant(booking.getTenant())
+                .startDate(booking.getStartDate())
+                .endDate(booking.getEndDate())
+                .status(booking.getStatus().name())
+                .message(booking.getMessage())
+                .build();
+    }
+
+    private void activateStartedBookings(){
         List<Booking> bookingsToActivate = bookingRepository.findBookingsToActivate();
         for(Booking booking : bookingsToActivate){
             booking.setStatus(BookingStatus.ACTIVE);
@@ -211,15 +228,21 @@ public class BookingService {
         }
     }
 
-    private BookingDto mapToDto(Booking booking){
-        return BookingDto.builder()
-                .id(booking.getId())
-                .listing(booking.getListing())
-                .tenant(booking.getTenant())
-                .startDate(booking.getStartDate())
-                .endDate(booking.getEndDate())
-                .status(booking.getStatus().name())
-                .message(booking.getMessage())
-                .build();
+    private void completeStartedBookings(){
+        List<Booking> bookingsToComplete = bookingRepository.findBookingsToComplete();
+        for(Booking booking : bookingsToComplete){
+            booking.setStatus(BookingStatus.COMPLETED);
+            bookingRepository.save(booking);
+            Listing listing = listingRepository.findById(booking.getListing()).get();
+            eventPublisher.publishEvent(new BookingStatusChangedEvent(
+                    this,
+                    booking.getId(),
+                    booking.getListing(),
+                    booking.getTenant(),
+                    listing.getOwner().getId(),
+                    BookingStatus.ACTIVE,
+                    BookingStatus.COMPLETED
+            ));
+        }
     }
 }
