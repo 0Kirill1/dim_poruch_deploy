@@ -444,7 +444,9 @@ describe('frontend integration flows', () => {
     stubApi(async (url) => {
       const path = apiPath(url); calls.push(path);
       if (path === '/listings/listing-1') return json({ id: 'listing-1', title: 'Світла квартира', city: 'Львів', rooms: 2, monthlyPrice: 15000, status: 'ACTIVE' });
-      if (path === '/listings/listing-1/images') return json([]);
+      if (path === '/listings/listing-1/images') return json([
+        { id: 'image-1', listingId: 'listing-1', imageUrl: '/listings/listing-1/images/image-1/content', isPrimary: true },
+      ]);
       if (path === '/listings/listing-1/availability') return json([]);
       if (path === '/listings/listing-1/rating') {
         if (!approved) return Promise.reject(new Error('rating unavailable'));
@@ -456,6 +458,11 @@ describe('frontend integration flows', () => {
     });
 
     renderRoute('/listings/listing-1', '/listings/:id', <ListingDetailsPage/>);
+    const fullscreenButton = await screen.findByRole('button', { name: 'Відкрити фото на весь екран' });
+    await userEvent.setup().click(fullscreenButton);
+    expect(await screen.findByRole('dialog', { name: 'Фото помешкання 1' })).toBeInTheDocument();
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Закрити повноекранний перегляд' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     await screen.findByText('Залиште відгук після бронювання');
     await waitFor(() => expect(screen.getAllByText('Оцінка недоступна')).toHaveLength(2));
     expect(screen.queryByText('Не вдалося завантажити оцінку помешкання. Спробуйте оновити сторінку.')).not.toBeInTheDocument();

@@ -191,6 +191,7 @@ export function ListingDetailsPage() {
   const [error, setError] = useState('');
   const [extraErrors, setExtraErrors] = useState([]);
   const [activeImage, setActiveImage] = useState(0);
+  const [fullscreenOpen, setFullscreenOpen] = useState(false);
   const requestedReturnTo = searchParams.get('returnTo');
   const returnTo = requestedReturnTo?.startsWith('/') && !requestedReturnTo.startsWith('//') ? requestedReturnTo : null;
 
@@ -252,6 +253,17 @@ export function ListingDetailsPage() {
     return listing?.imageUrls?.length ? listing.imageUrls : listing?.primaryImageUrl ? [listing.primaryImageUrl] : [];
   }, [images, listing]);
 
+  useEffect(() => {
+    if (!fullscreenOpen) return undefined;
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') setFullscreenOpen(false);
+      if (event.key === 'ArrowLeft') setActiveImage((current) => gallery.length ? (current - 1 + gallery.length) % gallery.length : 0);
+      if (event.key === 'ArrowRight') setActiveImage((current) => gallery.length ? (current + 1) % gallery.length : 0);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [fullscreenOpen, gallery.length]);
+
   if (loading) return <div className="page-container page-section"><Loading label="Завантажуємо помешкання…"/></div>;
   if (error || !listing) return <div className="page-container page-section"><Alert>{error || 'Помешкання не знайдено.'}</Alert><Link className="text-link" to="/search">Повернутися до пошуку</Link></div>;
   const canBook = listing.status === 'ACTIVE' && user?.role !== 'LANDLORD';
@@ -268,7 +280,7 @@ export function ListingDetailsPage() {
     <button type="button" className="back-link" onClick={() => returnTo ? navigate(returnTo) : navigate('/search')}><Icon name="back" size={17}/> До результатів пошуку</button>
     {extraErrors.length > 0 && <Alert tone="info">Деякі додаткові дані тимчасово недоступні. Основна інформація про помешкання завантажена.</Alert>}
     <div className="detail-title-row"><div><div className="listing-location"><Icon name="pin" size={15}/>{listing.city}{listing.address ? ` · ${listing.address}` : ''}</div><h1>{listing.title}</h1><div className="detail-title-meta"><Rating value={rating?.averageRating} count={rating?.reviewCount} state={ratingState}/><span>·</span><span>{listing.rooms} кімнати</span><span>·</span><span>{listing.area ? `${listing.area} м²` : 'Площа не вказана'}</span>{listing.status !== 'ACTIVE' && <StatusPill status={listing.status}/>}</div></div></div>
-    <div className="detail-gallery"><div className="gallery-main"><PropertyImage src={gallery[activeImage]} alt={`${listing.title}, фото ${activeImage + 1}`}/>{gallery.length > 1 && <><button type="button" className="gallery-control gallery-control-previous" onClick={showPreviousImage} aria-label="Попереднє фото"><Icon name="back" size={20}/></button><button type="button" className="gallery-control gallery-control-next" onClick={showNextImage} aria-label="Наступне фото"><Icon name="back" size={20}/></button><span className="gallery-count">{activeImage + 1} / {gallery.length}</span></>}</div>{gallery.length > 1 && <div className="gallery-thumbnails" role="list">{gallery.map((src, index) => <button type="button" className={`gallery-thumbnail ${index === activeImage ? 'gallery-thumbnail-active' : ''}`} key={`${src}-${index}`} onClick={() => setActiveImage(index)} aria-label={`Показати фото ${index + 1}`} aria-current={index === activeImage ? 'true' : undefined}><PropertyImage src={src} alt="" compact/></button>)}</div>}</div>
+    <div className="detail-gallery"><div className="gallery-main"><PropertyImage src={gallery[activeImage]} alt={`${listing.title}, фото ${activeImage + 1}`} className="gallery-main-image"/>{gallery.length > 0 && <button type="button" className="gallery-fullscreen" onClick={() => setFullscreenOpen(true)} aria-label="Відкрити фото на весь екран"><Icon name="expand" size={20}/></button>}{gallery.length > 1 && <><button type="button" className="gallery-control gallery-control-previous" onClick={showPreviousImage} aria-label="Попереднє фото"><Icon name="back" size={20}/></button><button type="button" className="gallery-control gallery-control-next" onClick={showNextImage} aria-label="Наступне фото"><Icon name="back" size={20}/></button><span className="gallery-count">{activeImage + 1} / {gallery.length}</span></>}</div>{gallery.length > 1 && <div className="gallery-thumbnails" role="list">{gallery.map((src, index) => <button type="button" className={`gallery-thumbnail ${index === activeImage ? 'gallery-thumbnail-active' : ''}`} key={`${src}-${index}`} onClick={() => setActiveImage(index)} aria-label={`Показати фото ${index + 1}`} aria-current={index === activeImage ? 'true' : undefined}><PropertyImage src={src} alt="" compact/></button>)}</div>}</div>
     <div className="detail-layout"><div className="detail-main-column">
       <section className="detail-section detail-intro"><div><span className="eyebrow">Про помешкання</span><h2>Простір для вашого життя</h2></div><p className="description-copy">{listing.description || 'Детальний опис цього помешкання незабаром з’явиться.'}</p></section>
       <section className="detail-section"><div className="section-title-row"><div><span className="eyebrow">Усе необхідне</span><h2>Зручності</h2></div><span className="feature-icon"><Icon name="spark" size={18}/></span></div><div className="amenity-list">{(listing.amenities || []).length ? listing.amenities.map((item) => <span className="amenity-chip" key={item}><Icon name="check" size={15}/>{amenityOptions.find(([key]) => key === item)?.[1] || item}</span>) : <p className="muted-copy">Власник ще не додав список зручностей.</p>}</div><div className="property-facts"><div><span className="fact-icon"><Icon name="home"/></span><span><small>Тип помешкання</small><strong>{propertyNames[listing.propertyType] || listing.propertyType}</strong></span></div><div><span className="fact-icon"><Icon name="spark"/></span><span><small>Площа</small><strong>{listing.area ? `${listing.area} м²` : '—'}</strong></span></div><div><span className="fact-icon"><Icon name="user"/></span><span><small>Кімнати</small><strong>{listing.rooms || '—'}</strong></span></div></div></section>
@@ -277,6 +289,7 @@ export function ListingDetailsPage() {
       <div className="availability-panel"><div className="availability-panel-heading"><span className="eyebrow">Доступність</span><strong>Календар помешкання</strong></div><AvailabilityCalendar availability={availability} readOnly/><small className="muted-copy">Позначені дні вже зайняті або недоступні.</small></div>
       {owner && <Link className="owner-card" to={`/users/${owner.id}`}><span className="avatar avatar-large">{(owner.fullName || 'В').slice(0, 1).toUpperCase()}</span><span className="owner-details"><small>Власник помешкання</small><strong>{owner.fullName || 'Власник'}</strong><span>На ДімПоруч з {owner.memberSince ? new Date(owner.memberSince).toLocaleDateString('uk-UA', { month: 'long', year: 'numeric' }) : '—'}</span></span><Icon name="arrow" size={17}/></Link>}
     </aside></div>
+    {fullscreenOpen && gallery.length > 0 && <div className="gallery-modal" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setFullscreenOpen(false); }}><div className="gallery-modal-content" role="dialog" aria-modal="true" aria-label={`Фото помешкання ${activeImage + 1}`}><button type="button" className="gallery-modal-close" onClick={() => setFullscreenOpen(false)} aria-label="Закрити повноекранний перегляд"><Icon name="close" size={22}/></button><PropertyImage src={gallery[activeImage]} alt={`${listing.title}, фото ${activeImage + 1}`} className="gallery-modal-image"/>{gallery.length > 1 && <><button type="button" className="gallery-modal-control gallery-modal-control-previous" onClick={showPreviousImage} aria-label="Попереднє фото"><Icon name="back" size={24}/></button><button type="button" className="gallery-modal-control gallery-modal-control-next" onClick={showNextImage} aria-label="Наступне фото"><Icon name="back" size={24}/></button><span className="gallery-modal-count">{activeImage + 1} / {gallery.length}</span></>}</div></div>}
   </div>;
 }
 
