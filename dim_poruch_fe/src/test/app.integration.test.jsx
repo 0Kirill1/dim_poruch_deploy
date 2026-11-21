@@ -153,10 +153,17 @@ describe('frontend integration flows', () => {
     expect(await screen.findByText('4.8')).toBeInTheDocument();
     expect(screen.getByText('(3)')).toBeInTheDocument();
     await user.type(screen.getByPlaceholderText('Київ, Львів, Одеса…'), 'Львів');
+    await user.click(screen.getByRole('checkbox', { name: 'Квартира' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Будинок' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Wi-Fi' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Паркінг' }));
     await user.click(screen.getByRole('button', { name: /Знайти житло/ }));
     await waitFor(() => expect(fetchMock.mock.calls.some(([input]) => {
       const url = new URL(input);
-      return apiPath(url) === '/listings' && url.searchParams.get('city') === 'Львів';
+      return apiPath(url) === '/listings'
+        && url.searchParams.get('city') === 'Львів'
+        && url.searchParams.get('propertyType') === 'APARTMENT,HOUSE'
+        && url.searchParams.get('amenity') === 'wifi,parking';
     })).toBe(true));
     expect(await screen.findByText(/18\s?000/)).toBeInTheDocument();
   });

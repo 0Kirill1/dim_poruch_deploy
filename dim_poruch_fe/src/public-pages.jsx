@@ -23,26 +23,43 @@ function normalizeListingRating(data) {
 
 function queryFromFilters(filters, page) {
   const query = new URLSearchParams();
-  Object.entries(filters).forEach(([key, value]) => { if (value !== '' && value !== null && value !== undefined) query.set(key, value); });
+  Object.entries(filters).forEach(([key, value]) => {
+    if (Array.isArray(value)) {
+      if (value.length) query.set(key, value.join(','));
+    } else if (value !== '' && value !== null && value !== undefined) {
+      query.set(key, value);
+    }
+  });
   query.set('page', String(page)); query.set('size', '8'); query.set('sort', filters.sort || 'createdAt,desc');
   return query.toString();
 }
 
 function SearchFilters({ filters, onChange, onSubmit, onClear, compact = false, fieldErrors = {} }) {
   const update = (key) => (event) => onChange({ ...filters, [key]: event.target.value });
+  const updatePropertyType = (event) => onChange({ ...filters, propertyType: event.target.value ? [event.target.value] : [] });
+  const updateAmenity = (event) => onChange({ ...filters, amenity: event.target.value ? [event.target.value] : [] });
   return <form className={`search-filters ${compact ? 'search-filters-compact' : ''}`} onSubmit={onSubmit}>
     <label className="filter-field filter-city"><span>Місто</span><div className="input-with-icon"><Icon name="pin" size={18}/><input value={filters.city || ''} onChange={update('city')} placeholder="Київ, Львів, Одеса…"/></div><FieldError error={fieldErrors.city}/></label>
     <label className="filter-field"><span>Ціна, ₴ / міс.</span><div className="price-range"><input aria-label="Від якої ціни" type="number" min="0" value={filters.minPrice || ''} onChange={update('minPrice')} placeholder="Від"/><i/> <input aria-label="До якої ціни" type="number" min="0" value={filters.maxPrice || ''} onChange={update('maxPrice')} placeholder="До"/></div><FieldError error={fieldErrors.minPrice || fieldErrors.maxPrice}/></label>
     <label className="filter-field"><span>Кімнат</span><select value={filters.rooms || ''} onChange={update('rooms')}><option value="">Будь-яка</option>{[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}{n === 5 ? '+' : ''}</option>)}</select><FieldError error={fieldErrors.rooms}/></label>
-    <label className="filter-field"><span>Тип житла</span><select value={filters.propertyType || ''} onChange={update('propertyType')}><option value="">Будь-який</option>{Object.entries(propertyNames).map(([key, name]) => <option key={key} value={key}>{name}</option>)}</select><FieldError error={fieldErrors.propertyType}/></label>
-    <label className="filter-field"><span>Зручність</span><select value={filters.amenity || ''} onChange={update('amenity')}><option value="">Не важливо</option>{amenityOptions.map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select><FieldError error={fieldErrors.amenity}/></label>
+    <label className="filter-field"><span>Тип житла</span><select value={Array.isArray(filters.propertyType) ? (filters.propertyType[0] || '') : (filters.propertyType || '')} onChange={updatePropertyType}><option value="">Будь-який</option>{Object.entries(propertyNames).map(([key, name]) => <option key={key} value={key}>{name}</option>)}</select><FieldError error={fieldErrors.propertyType}/></label>
+    <label className="filter-field"><span>Зручність</span><select value={Array.isArray(filters.amenity) ? (filters.amenity[0] || '') : (filters.amenity || '')} onChange={updateAmenity}><option value="">Не важливо</option>{amenityOptions.map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select><FieldError error={fieldErrors.amenity}/></label>
     <div className="filter-actions"><button type="button" className="text-button" onClick={onClear}>Очистити</button><Button type="submit" icon="search">Знайти житло</Button></div>
   </form>;
 }
 
 export function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const initialFilters = useMemo(() => ({ city: searchParams.get('city') || '', minPrice: searchParams.get('minPrice') || '', maxPrice: searchParams.get('maxPrice') || '', rooms: searchParams.get('rooms') || '', propertyType: searchParams.get('propertyType') || '', amenity: searchParams.get('amenity') || '', sort: searchParams.get('sort') || 'createdAt,desc' }), []);
+  const splitFilter = (key) => searchParams.get(key)?.split(',').filter(Boolean) || [];
+  const initialFilters = useMemo(() => ({
+    city: searchParams.get('city') || '',
+    minPrice: searchParams.get('minPrice') || '',
+    maxPrice: searchParams.get('maxPrice') || '',
+    rooms: searchParams.get('rooms') || '',
+    propertyType: splitFilter('propertyType'),
+    amenity: splitFilter('amenity'),
+    sort: searchParams.get('sort') || 'createdAt,desc',
+  }), []);
   const [filters, setFilters] = useState(initialFilters);
   const [page, setPage] = useState(Number(searchParams.get('page') || 0));
   const [result, setResult] = useState(null);
@@ -56,6 +73,8 @@ export function SearchPage() {
   useEffect(() => {
     const next = {};
     ['city', 'minPrice', 'maxPrice', 'rooms', 'propertyType', 'amenity'].forEach((key) => { next[key] = searchParams.get(key) || ''; });
+    next.propertyType = searchParams.get('propertyType')?.split(',').filter(Boolean) || [];
+    next.amenity = searchParams.get('amenity')?.split(',').filter(Boolean) || [];
     next.sort = searchParams.get('sort') || 'createdAt,desc';
     setFilters(next); setPage(Number(searchParams.get('page') || 0));
   }, [activeQuery]);
@@ -107,22 +126,28 @@ export function SearchPage() {
     setError(''); setSearchFieldErrors({}); setPage(0); setSearchParams(queryFromFilters(filters, 0)); window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   const changePage = (next) => { setPage(next); setSearchParams(queryFromFilters(filters, next)); window.scrollTo({ top: 0, behavior: 'smooth' }); };
-  const clear = () => { const empty = { city: '', minPrice: '', maxPrice: '', rooms: '', propertyType: '', amenity: '' }; setError(''); setSearchFieldErrors({}); setFilters(empty); setPage(0); setSearchParams({ page: '0' }); };
+  const clear = () => { const empty = { city: '', minPrice: '', maxPrice: '', rooms: '', propertyType: [], amenity: [], sort: 'createdAt,desc' }; setError(''); setSearchFieldErrors({}); setFilters(empty); setPage(0); setSearchParams({ page: '0', sort: 'createdAt,desc' }); };
   const listings = result?.content || [];
 
   const setSort = (sort) => { const next = { ...filters, sort }; setFilters(next); setPage(0); setSearchParams(queryFromFilters(next, 0)); };
-  const setProperty = (propertyType) => setFilters((current) => ({ ...current, propertyType: current.propertyType === propertyType ? '' : propertyType }));
-  const setAmenity = (amenity) => setFilters((current) => ({ ...current, amenity: current.amenity === amenity ? '' : amenity }));
+  const setProperty = (propertyType) => setFilters((current) => {
+    const selected = Array.isArray(current.propertyType) ? current.propertyType : [];
+    return { ...current, propertyType: selected.includes(propertyType) ? selected.filter((value) => value !== propertyType) : [...selected, propertyType] };
+  });
+  const setAmenity = (amenity) => setFilters((current) => {
+    const selected = Array.isArray(current.amenity) ? current.amenity : [];
+    return { ...current, amenity: selected.includes(amenity) ? selected.filter((value) => value !== amenity) : [...selected, amenity] };
+  });
   return <div className="search-page page-container">
     <div className="search-breadcrumb"><Link to="/">Головна</Link><span>/</span><strong>Пошук житла</strong></div>
     <PageHeading eyebrow="ДімПоруч · Пошук житла" title="Житло для довгострокової оренди" description="Знайдіть помешкання, у якому буде добре жити."/>
     <section className="search-toolbar"><SearchFilters filters={filters} onChange={setFilters} onSubmit={submit} onClear={clear} fieldErrors={searchFieldErrors}/></section>
     {error && <Alert>{error}</Alert>}
     <div className="search-layout"><aside className="search-sidebar"><div className="search-sidebar-heading"><h2>Фільтри</h2><button type="button" className="text-button" onClick={clear}>Скинути</button></div>
-      <section className="filter-group"><h3>Тип житла</h3>{Object.entries(propertyNames).map(([value, label]) => <label className="filter-check-row" key={value}><input type="checkbox" checked={filters.propertyType === value} onChange={() => setProperty(value)}/><span className="custom-check"><Icon name="check" size={13}/></span>{label}</label>)}</section>
+      <section className="filter-group"><h3>Тип житла</h3>{Object.entries(propertyNames).map(([value, label]) => <label className="filter-check-row" key={value}><input type="checkbox" checked={filters.propertyType.includes(value)} onChange={() => setProperty(value)}/><span className="custom-check"><Icon name="check" size={13}/></span>{label}</label>)}</section>
       <section className="filter-group"><h3>Кількість кімнат</h3><div className="room-filter-options">{[1, 2, 3, 4].map((value) => <button type="button" className={filters.rooms === String(value) ? 'room-filter-active' : ''} key={value} onClick={() => setFilters((current) => ({ ...current, rooms: current.rooms === String(value) ? '' : String(value) }))}>{value}</button>)}<button type="button" className={filters.rooms === '5' ? 'room-filter-active' : ''} onClick={() => setFilters((current) => ({ ...current, rooms: current.rooms === '5' ? '' : '5' }))}>5+</button></div></section>
       <section className="filter-group"><h3>Ціна за місяць, ₴</h3><div className="sidebar-price-range"><label><span>Від</span><input type="number" min="0" value={filters.minPrice} onChange={(event) => setFilters((current) => ({ ...current, minPrice: event.target.value }))} placeholder="0"/></label><span className="price-divider"/><label><span>До</span><input type="number" min="0" value={filters.maxPrice} onChange={(event) => setFilters((current) => ({ ...current, maxPrice: event.target.value }))} placeholder="Без межі"/></label></div></section>
-      <section className="filter-group"><h3>Зручності</h3>{amenityOptions.map(([value, label]) => <label className="filter-check-row" key={value}><input type="checkbox" checked={filters.amenity === value} onChange={() => setAmenity(value)}/><span className="custom-check"><Icon name="check" size={13}/></span>{label}</label>)}</section>
+      <section className="filter-group"><h3>Зручності</h3>{amenityOptions.map(([value, label]) => <label className="filter-check-row" key={value}><input type="checkbox" checked={filters.amenity.includes(value)} onChange={() => setAmenity(value)}/><span className="custom-check"><Icon name="check" size={13}/></span>{label}</label>)}</section>
       <Button className="button-full" onClick={() => submit({ preventDefault() {} })}>Показати оголошення <Icon name="arrow" size={16}/></Button>
     </aside><section className="search-results"><div className="search-results-header"><div><span className="eyebrow">Оберіть своє місце</span><h2>Знайдені помешкання</h2><p>{result ? `${result.totalElements ?? listings.length} оголошень` : 'Підбираємо варіанти для вас'}</p></div><label className="sort-control"><span>Сортувати:</span><select value={filters.sort} onChange={(event) => setSort(event.target.value)}><option value="createdAt,desc">Спочатку нові</option><option value="monthlyPrice,asc">Спочатку дешевші</option><option value="monthlyPrice,desc">Спочатку дорожчі</option></select></label></div>
       {loading ? <div className="search-results-grid"><Loading label="Шукаємо житло…"/></div> : listings.length ? <><div className="search-results-grid">{listings.map((listing) => <ListingCard key={listing.id} listing={listing} rating={ratings[listing.id]} ratingState={ratingStates[listing.id]} returnTo={`/search?${activeQuery}`}/>)}</div><Pagination page={Number(result?.number ?? page)} totalPages={result?.totalPages} onChange={changePage}/></> : !error && <EmptyState icon="search" title="Поки нічого не знайшли" text="Спробуйте змінити фільтри або обрати інше місто." action={<Button variant="outline" onClick={clear}>Очистити фільтри</Button>}/>}

@@ -6,6 +6,8 @@ import dimporuchbe.listings.persistence.Status;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.List;
 
 public class ListingSpecification {
 
@@ -42,10 +44,35 @@ public class ListingSpecification {
                 propertyType == null ? null : cb.equal(root.get("propertyType"), propertyType);
     }
 
+    public static Specification<Listing> hasPropertyTypes(String propertyTypes){
+        if (propertyTypes == null || propertyTypes.isBlank()) return (root, query, cb) -> null;
+        List<PropertyType> values = Arrays.stream(propertyTypes.split(","))
+                .map(String::trim)
+                .filter(value -> !value.isEmpty())
+                .map(PropertyType::valueOf)
+                .toList();
+        return values.isEmpty()
+                ? (root, query, cb) -> null
+                : (root, query, cb) -> root.get("propertyType").in(values);
+    }
+
     public static Specification<Listing> hasAmenity(String amenity){
         return (root, query, cb) -> {
             if (amenity == null || amenity.isBlank()) return null;
             return cb.isMember(amenity, root.get("amenities"));
         };
+    }
+
+    public static Specification<Listing> hasAmenities(String amenities){
+        if (amenities == null || amenities.isBlank()) return (root, query, cb) -> null;
+        Specification<Listing> spec = null;
+        for (String amenity : amenities.split(",")) {
+            String value = amenity.trim();
+            if (!value.isEmpty()) {
+                Specification<Listing> amenitySpec = hasAmenity(value);
+                spec = spec == null ? amenitySpec : spec.and(amenitySpec);
+            }
+        }
+        return spec == null ? (root, query, cb) -> null : spec;
     }
 }

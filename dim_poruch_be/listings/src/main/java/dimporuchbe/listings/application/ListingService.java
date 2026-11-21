@@ -136,11 +136,11 @@ public class ListingService {
             if (dto.getRooms() != null) {
                 spec = spec.and(ListingSpecification.hasRooms(dto.getRooms()));
             }
-            if (dto.getPropertyType() != null){
-                spec = spec.and(ListingSpecification.hasPropertyType(PropertyType.valueOf(dto.getPropertyType())));
+            if (dto.getPropertyType() != null && !dto.getPropertyType().isBlank()){
+                spec = spec.and(ListingSpecification.hasPropertyTypes(dto.getPropertyType()));
             }
-            if (dto.getAmenity() != null){
-                spec = spec.and(ListingSpecification.hasAmenity(dto.getAmenity()));
+            if (dto.getAmenity() != null && !dto.getAmenity().isBlank()){
+                spec = spec.and(ListingSpecification.hasAmenities(dto.getAmenity()));
             }
         }
 
